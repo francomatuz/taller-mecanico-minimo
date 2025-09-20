@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -18,7 +18,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Tooltip,
 } from '@mui/material';
 import {
   Edit,
@@ -31,8 +30,6 @@ import {
   Visibility,
   Email,
   Refresh,
-  KeyboardArrowUp,
-  KeyboardArrowDown,
   History,
   Add,
 } from '@mui/icons-material';

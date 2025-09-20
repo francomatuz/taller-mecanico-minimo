@@ -1,4 +1,4 @@
-import { supabase, Auto, Servicio, AutoConServicio, AutoHistory } from '../config/supabase';
+import { supabase, Auto, AutoConServicio, AutoHistory } from '../config/supabase';
 
 export class SupabaseService {
   

@@ -22,14 +22,10 @@ import {
   Edit,
   Print,
   Add,
-  CalendarToday,
   DirectionsCar,
-  Build,
-  Person,
-  Phone,
   Speed
 } from '@mui/icons-material';
-import { AutoHistory, Servicio } from '../types/Auto';
+import { AutoHistory } from '../types/Auto';
 import { SupabaseService } from '../services/supabaseService';
 import '../types/electronAPI';
 
