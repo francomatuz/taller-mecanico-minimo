@@ -7,16 +7,13 @@ import {
   Typography,
   Tabs,
   Tab,
-  Fab,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Add, CarRepair, List, Settings } from '@mui/icons-material';
+import { CarRepair, List, Settings } from '@mui/icons-material';
 import FichaForm from './components/FichaForm';
 import { SupabaseService } from './services/supabaseService';
 import FichasList from './components/FichasList';
@@ -65,10 +62,6 @@ function App() {
   });
 
   // Cargar fichas al iniciar
-  useEffect(() => {
-    loadFichas();
-  }, []);
-
   const loadFichas = async () => {
     try {
       const data = await SupabaseService.getAllFichas();
@@ -78,6 +71,10 @@ function App() {
       showSnackbar('Error al cargar las fichas', 'error');
     }
   };
+
+  useEffect(() => {
+    loadFichas();
+  }, []);
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
     setSnackbar({ open: true, message, severity });
