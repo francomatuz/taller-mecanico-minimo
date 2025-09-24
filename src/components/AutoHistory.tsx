@@ -20,13 +20,14 @@ import {
 import {
   Close,
   Edit,
-  Print,
   Add,
   DirectionsCar,
-  Speed
+  Speed,
+  PictureAsPdf
 } from '@mui/icons-material';
 import { AutoHistory } from '../types/Auto';
 import { SupabaseService } from '../services/supabaseService';
+import { saveServicePDF, saveAllServicesPDF } from '../utils/pdfGenerator';
 import '../types/electronAPI';
 
 interface AutoHistoryProps {
@@ -162,7 +163,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
             )}
           </Alert>
 
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               startIcon={<Add />}
@@ -177,6 +178,21 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
               onClick={() => onEdit(autoInfo)}
             >
               Editar Info del Auto
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PictureAsPdf />}
+              onClick={() => {
+                try {
+                  saveAllServicesPDF(autoHistory!);
+                } catch (error) {
+                  console.error('Error exporting all services PDF:', error);
+                }
+              }}
+              disabled={!autoHistory || autoHistory.servicios.length === 0}
+              sx={{ color: 'error.main', borderColor: 'error.main' }}
+            >
+              Exportar Historial Completo PDF
             </Button>
           </Box>
         </Box>
@@ -227,9 +243,18 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                           <Edit />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Imprimir servicio">
-                        <IconButton size="small">
-                          <Print />
+                      <Tooltip title="Exportar servicio individual PDF">
+                        <IconButton 
+                          size="small"
+                          onClick={() => {
+                            try {
+                              saveServicePDF(autoHistory!, index);
+                            } catch (error) {
+                              console.error('Error exporting service PDF:', error);
+                            }
+                          }}
+                        >
+                          <PictureAsPdf />
                         </IconButton>
                       </Tooltip>
                     </Box>
