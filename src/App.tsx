@@ -18,6 +18,7 @@ import FichaForm from './components/FichaForm';
 import { SupabaseService } from './services/supabaseService';
 import FichasList from './components/FichasList';
 import AutoHistoryDialog from './components/AutoHistory';
+import ThemeToggle from './components/ThemeToggle';
 import { FichaAuto } from './types/FichaAuto';
 import { AutoConServicio } from './types/Auto';
 import './types/electronAPI';
@@ -190,6 +191,7 @@ function App() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Taller Mecánico - Sistema de Gestión
           </Typography>
+          <ThemeToggle />
         </Toolbar>
       </AppBar>
 
