@@ -1,4 +1,5 @@
-import { supabase, Auto, AutoConServicio, AutoHistory } from '../config/supabase';
+import { supabase, Auto, AutoConServicio } from '../config/supabase';
+import { AutoHistory } from '../types/Auto';
 
 export class SupabaseService {
   
@@ -12,24 +13,38 @@ export class SupabaseService {
       
       if (autosError) throw autosError;
       
+      
       const fichas: AutoConServicio[] = [];
       
       for (const auto of autos || []) {
         // Obtener el último servicio de cada auto
-        const { data: ultimoServicio } = await supabase
+        const { data: ultimoServicio, error: servicioError } = await supabase
           .from('servicios')
           .select('*')
           .eq('auto_id', auto.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
+        if (servicioError) {
+          console.error(`❌ [SUPABASE] Error obteniendo servicio para auto ${auto.id}:`, servicioError);
+        }
+        
+
         fichas.push({
-          ...auto,
-          ...ultimoServicio,
+          ...auto, // Mantener todos los datos del auto (incluyendo el ID correcto)
+          // Solo agregar campos específicos del servicio, NO sobrescribir el ID
+          fecha_ingreso: ultimoServicio?.fecha_ingreso,
+          fecha_trabajo: ultimoServicio?.fecha_trabajo,
+          kilometraje: ultimoServicio?.kilometraje,
+          orden_trabajo: ultimoServicio?.orden_trabajo,
+          repuestos_utilizados: ultimoServicio?.repuestos_utilizados,
+          trabajo_realizado: ultimoServicio?.trabajo_realizado,
+          observaciones: ultimoServicio?.observaciones,
           servicio_id: ultimoServicio?.id
         });
       }
+      
       
       return fichas;
       
@@ -42,7 +57,6 @@ export class SupabaseService {
   // Insertar nueva ficha (auto + servicio)
   static async insertFicha(ficha: any): Promise<{ success: boolean; id?: number; error?: string; isNewAuto?: boolean; serviceId?: number }> {
     try {
-      console.log('💾 [SUPABASE] Insertando ficha:', ficha);
       
       // Verificar si el auto ya existe por patente
       const { data: autoExistente } = await supabase
@@ -70,7 +84,6 @@ export class SupabaseService {
         
         if (servicioError) throw servicioError;
         
-        console.log('✅ [SUPABASE] Nuevo servicio agregado:', nuevoServicio.id);
         return { 
           success: true, 
           id: autoExistente.id, 
@@ -96,6 +109,7 @@ export class SupabaseService {
         if (autoError) throw autoError;
         
         // Crear primer servicio
+
         const { data: nuevoServicio, error: servicioError } = await supabase
           .from('servicios')
           .insert([{
@@ -113,7 +127,6 @@ export class SupabaseService {
         
         if (servicioError) throw servicioError;
         
-        console.log('✅ [SUPABASE] Nuevo auto y servicio creados:', nuevoAuto.id, nuevoServicio.id);
         return { 
           success: true, 
           id: nuevoAuto.id, 
@@ -131,7 +144,6 @@ export class SupabaseService {
   // Actualizar ficha (actualizar auto + crear nuevo servicio)
   static async updateFicha(id: number, ficha: any): Promise<{ success: boolean; error?: string; serviceId?: number }> {
     try {
-      console.log('🔄 [SUPABASE] Actualizando ficha ID:', id, 'con datos:', ficha);
       
       // Actualizar datos del auto
       const { error: autoError } = await supabase
@@ -150,9 +162,9 @@ export class SupabaseService {
       
       if (autoError) throw autoError;
       
-      console.log('✅ [SUPABASE] Auto actualizado correctamente');
       
       // Crear nuevo servicio
+
       const { data: nuevoServicio, error: servicioError } = await supabase
         .from('servicios')
         .insert([{
@@ -170,7 +182,6 @@ export class SupabaseService {
       
       if (servicioError) throw servicioError;
       
-      console.log('✅ [SUPABASE] Nuevo servicio creado correctamente con ID:', nuevoServicio.id);
       return { success: true, serviceId: nuevoServicio.id };
       
     } catch (error: any) {
@@ -182,7 +193,6 @@ export class SupabaseService {
   // Eliminar ficha (auto + todos sus servicios)
   static async deleteFicha(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🗑️ [SUPABASE] Eliminando auto ID:', id);
       
       // Eliminar servicios primero (por las foreign keys)
       const { error: serviciosError } = await supabase
@@ -200,7 +210,6 @@ export class SupabaseService {
       
       if (autoError) throw autoError;
       
-      console.log('✅ [SUPABASE] Auto y servicios eliminados correctamente');
       return { success: true };
       
     } catch (error: any) {
@@ -212,7 +221,6 @@ export class SupabaseService {
   // Obtener ficha por ID
   static async getFichaById(id: number): Promise<AutoConServicio | null> {
     try {
-      console.log('🔍 [SUPABASE] Obteniendo ficha por ID:', id);
       
       // Obtener auto
       const { data: auto, error: autoError } = await supabase
@@ -232,7 +240,6 @@ export class SupabaseService {
         .limit(1)
         .single();
       
-      console.log('✅ [SUPABASE] Ficha obtenida:', auto);
       return {
         ...auto,
         ...servicio,
@@ -248,18 +255,23 @@ export class SupabaseService {
   // Obtener historial de auto
   static async getAutoHistory(autoId: number): Promise<AutoHistory | null> {
     try {
-      console.log('🔍 [SUPABASE] Buscando historial para auto ID:', autoId);
       
       // Obtener auto
       const { data: auto, error: autoError } = await supabase
         .from('autos')
         .select('*')
         .eq('id', autoId)
-        .single();
+        .maybeSingle();
       
-      if (autoError) throw autoError;
+      if (autoError) {
+        console.error('❌ [SUPABASE] Error buscando auto:', autoError);
+        throw autoError;
+      }
       
-      console.log('✅ [SUPABASE] Auto encontrado:', auto.marca, auto.modelo, auto.patente);
+      if (!auto) {
+        return null;
+      }
+      
       
       // Obtener todos los servicios del auto
       const { data: servicios, error: serviciosError } = await supabase
@@ -268,16 +280,22 @@ export class SupabaseService {
         .eq('auto_id', autoId)
         .order('created_at', { ascending: false });
       
+      
       if (serviciosError) throw serviciosError;
       
-      console.log('📋 [SUPABASE] Servicios encontrados:', servicios?.length || 0);
       
       const autoHistory: AutoHistory = {
-        ...auto,
+        auto_id: auto.id,
+        marca: auto.marca,
+        modelo: auto.modelo,
+        año: auto.año,
+        patente: auto.patente,
+        numero_chasis: auto.numero_chasis,
+        cliente_nombre: auto.cliente_nombre,
+        cliente_telefono: auto.cliente_telefono,
         servicios: servicios || []
       };
       
-      console.log('📤 [SUPABASE] Enviando historial completo:', autoHistory);
       return autoHistory;
       
     } catch (error: any) {

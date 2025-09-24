@@ -64,7 +64,11 @@ function App() {
   // Cargar fichas al iniciar
   const loadFichas = async () => {
     try {
+      console.log('🔄 [APP] Cargando fichas...');
+      // Limpiar estado antes de cargar
+      setFichas([]);
       const data = await SupabaseService.getAllFichas();
+      console.log('📋 [APP] Fichas cargadas:', data.map(f => ({ id: f.id, marca: f.marca, modelo: f.modelo, patente: f.patente })));
       setFichas(data);
     } catch (error) {
       console.error('Error loading fichas:', error);
@@ -96,17 +100,12 @@ function App() {
 
   const handleSaveFicha = async (ficha: FichaAuto) => {
     try {
-      console.log('💾 [APP] Guardando ficha:', ficha);
       let result;
       if (editingFicha && editingFicha.id) {
-        console.log('✏️ [APP] Editando ficha existente ID:', editingFicha.id);
         result = await SupabaseService.updateFicha(editingFicha.id, ficha);
       } else {
-        console.log('➕ [APP] Creando nueva ficha');
         result = await SupabaseService.insertFicha(ficha);
       }
-
-      console.log('📋 [APP] Resultado del guardado:', result);
 
       if (result.success) {
         showSnackbar(
@@ -119,7 +118,7 @@ function App() {
         showSnackbar('Error al guardar la ficha', 'error');
       }
     } catch (error) {
-      console.error('💥 [APP] Error saving ficha:', error);
+      console.error('Error saving ficha:', error);
       showSnackbar('Error al guardar la ficha', 'error');
     }
   };

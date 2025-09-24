@@ -49,7 +49,13 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
 
   useEffect(() => {
     if (open && autoId) {
+      // Limpiar estado anterior antes de cargar nuevo historial
+      setAutoHistory(null);
       loadAutoHistory();
+    } else if (!open) {
+      // Limpiar estado cuando se cierra el dialog
+      setAutoHistory(null);
+      setLoading(false);
     }
   }, [open, autoId]);
 
@@ -58,21 +64,30 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
     
     setLoading(true);
     try {
-      console.log('🔍 Cargando historial para auto ID:', autoId);
-      // Llamar a la función real para obtener el historial del auto
       const history = await SupabaseService.getAutoHistory(autoId);
-      console.log('📋 Datos recibidos del historial:', history);
       
       if (history) {
         console.log('✅ Historial encontrado. Servicios:', history.servicios?.length || 0);
+        console.log('📋 Lista completa de servicios:', history.servicios);
         
-        // Si history es un array, tomar el primer elemento
-        const autoHistoryData = Array.isArray(history) ? history[0] : history;
-        console.log('📋 Datos procesados:', autoHistoryData);
+        // Debug detallado de cada servicio
+        if (history.servicios && history.servicios.length > 0) {
+          history.servicios.forEach((servicio, index) => {
+            console.log(`🔧 Servicio ${index + 1}:`, {
+              id: servicio.id,
+              auto_id: servicio.auto_id,
+              fecha_ingreso: servicio.fecha_ingreso,
+              fecha_trabajo: servicio.fecha_trabajo,
+              orden_trabajo: servicio.orden_trabajo,
+              trabajo_realizado: servicio.trabajo_realizado,
+              repuestos_utilizados: servicio.repuestos_utilizados,
+              observaciones: servicio.observaciones
+            });
+          });
+        }
         
-        setAutoHistory(autoHistoryData);
+        setAutoHistory(history);
       } else {
-        console.log('❌ No se encontró historial para el auto ID:', autoId);
         setAutoHistory(null);
       }
     } catch (error) {
@@ -142,7 +157,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
             📋 Total de servicios: <strong>{servicios.length}</strong>
             {servicios.length > 0 && (
               <>
-                {' '}| Último servicio: <strong>{formatDate(servicios[0].fecha_ingreso)}</strong>
+                {' '}| Último servicio: <strong>{formatDate(servicios[0].fecha_trabajo || servicios[0].fecha_ingreso)}</strong>
               </>
             )}
           </Alert>
@@ -170,12 +185,18 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
 
         {servicios.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              ⚠️ No se encontraron servicios para este auto
+            </Alert>
             <DirectionsCar sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No hay servicios registrados
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Agrega el primer servicio para comenzar el historial
+            <Typography variant="body1" color="text.secondary">
+              Este auto no tiene servicios registrados aún. Esto puede indicar un problema con la creación del primer servicio.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Auto ID: {autoInfo.auto_id}
             </Typography>
           </Box>
         ) : (
@@ -186,7 +207,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        📅 Servicio #{servicios.length - index} - {formatDate(servicio.fecha_ingreso)}
+                        📅 Servicio #{servicios.length - index} - {formatDate(servicio.fecha_trabajo || servicio.fecha_ingreso)}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
                         {getServiceStatus(servicio.fecha_trabajo)}

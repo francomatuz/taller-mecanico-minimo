@@ -33,8 +33,6 @@ import {
   History,
   Add,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { FichaAuto } from '../types/FichaAuto';
 import { AutoConServicio } from '../types/Auto';
 import { generatePDF } from '../utils/pdfGenerator';
@@ -174,13 +172,6 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
     handleMenuClose();
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return dateString;
-    }
-  };
 
   const getStatusColor = (ficha: AutoConServicio) => {
     if (ficha.fecha_trabajo) {
