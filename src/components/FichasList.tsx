@@ -22,7 +22,6 @@ import {
 import {
   Edit,
   Delete,
-  Print,
   PictureAsPdf,
   WhatsApp,
   Search,
@@ -36,6 +35,7 @@ import {
 import { FichaAuto } from '../types/FichaAuto';
 import { AutoConServicio } from '../types/Auto';
 import { generatePDF } from '../utils/pdfGenerator';
+import { openWhatsAppWeb, generateReminderMessage } from '../services/whatsappPuppeteer';
 import '../types/electronAPI';
 
 interface FichasListProps {
@@ -81,6 +81,7 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
       fecha_trabajo: auto.fecha_trabajo,
       cliente_nombre: auto.cliente_nombre,
       cliente_telefono: auto.cliente_telefono,
+      cliente_fiel: auto.cliente_fiel || false,
       orden_trabajo: auto.orden_trabajo || '',
       repuestos_utilizados: auto.repuestos_utilizados || '',
       trabajo_realizado: auto.trabajo_realizado || '',
@@ -100,6 +101,7 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
       numero_chasis: ficha.numero_chasis,
       cliente_nombre: ficha.cliente_nombre,
       cliente_telefono: ficha.cliente_telefono,
+      cliente_fiel: ficha.cliente_fiel || false,
       created_at: ficha.created_at || new Date().toISOString(),
       fecha_ingreso: ficha.fecha_ingreso,
       fecha_trabajo: ficha.fecha_trabajo,
@@ -140,15 +142,6 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
     setMenuFicha(null);
   };
 
-  const handlePrint = async (ficha: FichaAuto) => {
-    try {
-      // Para web, simplemente exportamos como PDF
-      handleExportPDF(ficha);
-    } catch (error) {
-      console.error('Error printing:', error);
-    }
-    handleMenuClose();
-  };
 
   const handleExportPDF = async (ficha: FichaAuto) => {
     try {
@@ -161,8 +154,25 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
   };
 
   const handleWhatsApp = (ficha: FichaAuto) => {
-    // Implementar envío por WhatsApp
-    console.log('Enviar por WhatsApp:', ficha);
+    if (ficha.cliente_telefono) {
+      // Generar mensaje de recordatorio
+      const autoInfo = `${ficha.marca} ${ficha.modelo} (${ficha.patente})`;
+      const ultimoService = ficha.fecha_trabajo || ficha.fecha_ingreso || 'Sin servicios registrados';
+      
+      const message = generateReminderMessage(
+        ficha.cliente_nombre,
+        autoInfo,
+        ultimoService
+      );
+      
+      // Abrir WhatsApp Web con el mensaje
+      openWhatsAppWeb(ficha.cliente_telefono, message);
+      
+      console.log('📱 WhatsApp abierto para:', ficha.cliente_nombre, ficha.cliente_telefono);
+    } else {
+      console.warn('⚠️ No hay teléfono disponible para enviar WhatsApp');
+      alert('No hay número de teléfono disponible para este cliente');
+    }
     handleMenuClose();
   };
 
@@ -360,12 +370,6 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
           </ListItemIcon>
           <ListItemText>Editar</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => menuFicha && handlePrint(menuFicha)}>
-          <ListItemIcon>
-            <Print fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Imprimir</ListItemText>
-        </MenuItem>
         <MenuItem onClick={() => menuFicha && handleExportPDF(menuFicha)}>
           <ListItemIcon>
             <PictureAsPdf fontSize="small" />
@@ -520,12 +524,6 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
                 }}
               >
                 Editar
-              </Button>
-              <Button
-                startIcon={<Print />}
-                onClick={() => handlePrint(selectedFicha)}
-              >
-                Imprimir
               </Button>
             </>
           )}

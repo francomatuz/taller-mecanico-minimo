@@ -10,6 +10,7 @@ export interface FichaAuto {
   fecha_trabajo?: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_fiel: boolean; // Cliente VIP/Fiel para recordatorios automáticos
   orden_trabajo?: string;
   repuestos_utilizados?: string;
   trabajo_realizado?: string;
@@ -29,6 +30,7 @@ export interface FichaFormData {
   fecha_trabajo: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_fiel: boolean;
   orden_trabajo: string;
   repuestos_utilizados: string;
   trabajo_realizado: string;

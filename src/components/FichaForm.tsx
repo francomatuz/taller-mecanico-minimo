@@ -12,6 +12,8 @@ import {
   MenuItem,
   FormHelperText,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -45,6 +47,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     fecha_trabajo: '',
     cliente_nombre: '',
     cliente_telefono: '',
+    cliente_fiel: false, // Por defecto no es cliente fiel
     orden_trabajo: '',
     repuestos_utilizados: '',
     trabajo_realizado: '',
@@ -107,6 +110,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
         fecha_trabajo: ficha.fecha_trabajo || '',
         cliente_nombre: ficha.cliente_nombre || '',
         cliente_telefono: ficha.cliente_telefono || '',
+        cliente_fiel: ficha.cliente_fiel || false,
         orden_trabajo: ficha.orden_trabajo || '',
         repuestos_utilizados: ficha.repuestos_utilizados || '',
         trabajo_realizado: ficha.trabajo_realizado || '',
@@ -154,7 +158,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof FichaFormData, value: string) => {
+  const handleInputChange = (field: keyof FichaFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[field]) {
@@ -162,8 +166,18 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     }
 
     // Verificar patente existente cuando se complete el campo
-    if (field === 'patente' && value.trim().length >= 6) {
+    if (field === 'patente' && typeof value === 'string' && value.trim().length >= 6) {
       checkExistingPatente(value.trim());
+    }
+
+    // Validación en tiempo real para trabajo realizado
+    if (field === 'trabajo_realizado' && typeof value === 'string') {
+      const trabajo = value.trim();
+      if (trabajo.length > 0 && trabajo.length < 3) {
+        setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado debe tener al menos 3 caracteres' }));
+      } else if (trabajo.length >= 3) {
+        setErrors(prev => ({ ...prev, trabajo_realizado: undefined }));
+      }
     }
   };
 
@@ -189,6 +203,18 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
       return;
     }
 
+    // Verificar si el trabajo realizado está vacío o es muy corto
+    if (!formData.trabajo_realizado || formData.trabajo_realizado.trim() === '') {
+      setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado es obligatorio' }));
+      return;
+    }
+
+    // Verificar que el trabajo realizado tenga al menos 3 caracteres
+    if (formData.trabajo_realizado.trim().length < 3) {
+      setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado debe tener al menos 3 caracteres' }));
+      return;
+    }
+
     const fichaData: FichaAuto = {
       marca: formData.marca.trim(),
       modelo: formData.modelo.trim(),
@@ -200,6 +226,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
       fecha_trabajo: formData.fecha_trabajo || undefined,
       cliente_nombre: formData.cliente_nombre.trim(),
       cliente_telefono: formData.cliente_telefono.trim(),
+      cliente_fiel: formData.cliente_fiel,
       orden_trabajo: formData.orden_trabajo.trim() || undefined,
       repuestos_utilizados: formData.repuestos_utilizados.trim() || undefined,
       trabajo_realizado: formData.trabajo_realizado.trim() || undefined,
@@ -419,6 +446,29 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
               error={!!errors.cliente_telefono}
               helperText={errors.cliente_telefono}
               placeholder="Ej: +54 9 11 1234-5678"
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.cliente_fiel}
+                  onChange={(e) => handleInputChange('cliente_fiel', e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body1" component="span" sx={{ fontWeight: 500 }}>
+                    🏆 Cliente Fiel/VIP
+                  </Typography>
+                  <Typography variant="body2" component="div" color="text.secondary">
+                    Activar para enviar recordatorios automáticos de servicios
+                  </Typography>
+                </Box>
+              }
+              sx={{ alignItems: 'flex-start', mt: 1 }}
             />
           </Grid>
         </Grid>

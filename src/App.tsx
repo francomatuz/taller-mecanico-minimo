@@ -13,12 +13,14 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { CarRepair, List, Settings } from '@mui/icons-material';
+import { CarRepair, List, Settings, BarChart, Notifications } from '@mui/icons-material';
 import FichaForm from './components/FichaForm';
 import { SupabaseService } from './services/supabaseService';
 import FichasList from './components/FichasList';
 import AutoHistoryDialog from './components/AutoHistory';
 import ThemeToggle from './components/ThemeToggle';
+import Statistics from './components/Statistics';
+import ReminderNotifications from './components/ReminderNotifications';
 import { FichaAuto } from './types/FichaAuto';
 import { AutoConServicio } from './types/Auto';
 import './types/electronAPI';
@@ -79,6 +81,7 @@ function App() {
 
   useEffect(() => {
     loadFichas();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
@@ -116,7 +119,9 @@ function App() {
         handleCloseDialog();
         loadFichas();
       } else {
-        showSnackbar('Error al guardar la ficha', 'error');
+        const errorMessage = result.error || 'Error al guardar la ficha';
+        showSnackbar(errorMessage, 'error');
+        console.error('Error guardando ficha:', result.error);
       }
     } catch (error) {
       console.error('Error saving ficha:', error);
@@ -170,6 +175,7 @@ function App() {
         fecha_trabajo: '',
         cliente_nombre: auto.cliente_nombre,
         cliente_telefono: auto.cliente_telefono,
+        cliente_fiel: auto.cliente_fiel || false,
         orden_trabajo: '',
         repuestos_utilizados: '',
         trabajo_realizado: '',
@@ -205,6 +211,18 @@ function App() {
               sx={{ textTransform: 'none' }}
             />
             <Tab 
+              icon={<BarChart />} 
+              label="Estadísticas" 
+              iconPosition="start"
+              sx={{ textTransform: 'none' }}
+            />
+            <Tab 
+              icon={<Notifications />} 
+              label="Recordatorios" 
+              iconPosition="start"
+              sx={{ textTransform: 'none' }}
+            />
+            <Tab 
               icon={<Settings />} 
               label="Configuración" 
               iconPosition="start"
@@ -226,6 +244,14 @@ function App() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
+          <Statistics />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <ReminderNotifications />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={3}>
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="h5" color="text.secondary">
               Configuración
@@ -284,6 +310,7 @@ function App() {
         onEdit={handleEditFicha}
         onAddService={handleAddService}
       />
+
     </Box>
   );
 }

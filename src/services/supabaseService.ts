@@ -1,5 +1,5 @@
-import { supabase, Auto, AutoConServicio } from '../config/supabase';
-import { AutoHistory } from '../types/Auto';
+import { supabase } from '../config/supabase';
+import { Auto, AutoConServicio, AutoHistory } from '../types/Auto';
 
 export class SupabaseService {
   
@@ -54,9 +54,67 @@ export class SupabaseService {
     }
   }
   
+  // Verificar si existe un servicio duplicado
+  static async checkDuplicateService(autoId: number, trabajoRealizado: string, fechaTrabajo?: string): Promise<boolean> {
+    try {
+      console.log('🔍 [SUPABASE] Verificando duplicados para auto ID:', autoId);
+      console.log('🔍 [SUPABASE] Trabajo realizado:', trabajoRealizado);
+      console.log('🔍 [SUPABASE] Fecha trabajo:', fechaTrabajo);
+
+      if (!trabajoRealizado || trabajoRealizado.trim() === '') {
+        console.log('⚠️ [SUPABASE] Trabajo realizado vacío, no puede ser duplicado');
+        return false; // Si no hay trabajo realizado, no puede ser duplicado
+      }
+
+      // Normalizar el trabajo realizado (trim y lowercase para comparación)
+      const trabajoNormalizado = trabajoRealizado.trim().toLowerCase();
+
+      // Obtener todos los servicios del auto para verificar duplicados
+      const { data: serviciosExistentes, error } = await supabase
+        .from('servicios')
+        .select('id, trabajo_realizado, fecha_trabajo')
+        .eq('auto_id', autoId);
+
+      if (error) {
+        console.error('❌ [SUPABASE] Error verificando duplicados:', error);
+        return false;
+      }
+
+      console.log('🔍 [SUPABASE] Servicios existentes encontrados:', serviciosExistentes?.length || 0);
+
+      // Verificar si hay algún servicio con el mismo trabajo realizado (normalizado)
+      if (serviciosExistentes && serviciosExistentes.length > 0) {
+        for (const servicio of serviciosExistentes) {
+          const servicioTrabajoNormalizado = servicio.trabajo_realizado?.trim().toLowerCase() || '';
+          
+          console.log('🔍 [SUPABASE] Comparando:', trabajoNormalizado, 'vs', servicioTrabajoNormalizado);
+          
+          if (servicioTrabajoNormalizado === trabajoNormalizado) {
+            // Si también especificó fecha de trabajo, verificar que no sea la misma fecha
+            if (fechaTrabajo && servicio.fecha_trabajo === fechaTrabajo) {
+              console.log('⚠️ [SUPABASE] Servicio duplicado encontrado (mismo trabajo + fecha):', servicio);
+              return true;
+            } else if (!fechaTrabajo) {
+              // Si no especificó fecha, considerar duplicado si hay cualquier servicio con el mismo trabajo
+              console.log('⚠️ [SUPABASE] Servicio duplicado encontrado (mismo trabajo realizado):', servicio);
+              return true;
+            }
+          }
+        }
+      }
+
+      console.log('✅ [SUPABASE] No se encontraron duplicados');
+      return false;
+    } catch (error) {
+      console.error('❌ [SUPABASE] Error en checkDuplicateService:', error);
+      return false;
+    }
+  }
+
   // Insertar nueva ficha (auto + servicio)
   static async insertFicha(ficha: any): Promise<{ success: boolean; id?: number; error?: string; isNewAuto?: boolean; serviceId?: number }> {
     try {
+      console.log('🔍 [SUPABASE] Iniciando insertFicha para:', ficha.patente, ficha.cliente_nombre);
       
       // Verificar si el auto ya existe por patente
       const { data: autoExistente } = await supabase
@@ -66,6 +124,23 @@ export class SupabaseService {
         .single();
       
       if (autoExistente) {
+        console.log('✅ [SUPABASE] Auto existe, agregando nuevo servicio para ID:', autoExistente.id);
+        
+        // Verificar si ya existe un servicio duplicado
+        const esDuplicado = await this.checkDuplicateService(
+          autoExistente.id, 
+          ficha.trabajo_realizado, 
+          ficha.fecha_trabajo
+        );
+        
+        if (esDuplicado) {
+          console.log('🚫 [SUPABASE] Servicio duplicado detectado, cancelando inserción');
+          return { 
+            success: false, 
+            error: 'Ya existe un servicio con el mismo trabajo realizado para este vehículo' 
+          };
+        }
+        
         // Auto existe, solo agregar nuevo servicio
         const { data: nuevoServicio, error: servicioError } = await supabase
           .from('servicios')
@@ -84,6 +159,7 @@ export class SupabaseService {
         
         if (servicioError) throw servicioError;
         
+        console.log('✅ [SUPABASE] Servicio creado exitosamente, ID:', nuevoServicio.id);
         return { 
           success: true, 
           id: autoExistente.id, 
@@ -91,6 +167,7 @@ export class SupabaseService {
           serviceId: nuevoServicio.id 
         };
       } else {
+        console.log('🆕 [SUPABASE] Auto no existe, creando auto nuevo + primer servicio');
         // Auto no existe, crear auto + primer servicio
         const { data: nuevoAuto, error: autoError } = await supabase
           .from('autos')
@@ -101,15 +178,34 @@ export class SupabaseService {
             patente: ficha.patente,
             numero_chasis: ficha.numero_chasis,
             cliente_nombre: ficha.cliente_nombre,
-            cliente_telefono: ficha.cliente_telefono
+            cliente_telefono: ficha.cliente_telefono,
+            cliente_fiel: ficha.cliente_fiel || false
           }])
           .select()
           .single();
         
         if (autoError) throw autoError;
         
+        console.log('✅ [SUPABASE] Auto creado exitosamente, ID:', nuevoAuto.id);
+        
+        // Para autos nuevos, también verificar duplicados (por si acaso)
+        const esDuplicado = await this.checkDuplicateService(
+          nuevoAuto.id, 
+          ficha.trabajo_realizado, 
+          ficha.fecha_trabajo
+        );
+        
+        if (esDuplicado) {
+          console.log('🚫 [SUPABASE] Servicio duplicado detectado en auto nuevo, cancelando inserción');
+          // Eliminar el auto que acabamos de crear
+          await supabase.from('autos').delete().eq('id', nuevoAuto.id);
+          return { 
+            success: false, 
+            error: 'Ya existe un servicio con el mismo trabajo realizado' 
+          };
+        }
+        
         // Crear primer servicio
-
         const { data: nuevoServicio, error: servicioError } = await supabase
           .from('servicios')
           .insert([{
@@ -127,6 +223,7 @@ export class SupabaseService {
         
         if (servicioError) throw servicioError;
         
+        console.log('✅ [SUPABASE] Primer servicio creado exitosamente, ID:', nuevoServicio.id);
         return { 
           success: true, 
           id: nuevoAuto.id, 
@@ -156,6 +253,7 @@ export class SupabaseService {
           numero_chasis: ficha.numero_chasis,
           cliente_nombre: ficha.cliente_nombre,
           cliente_telefono: ficha.cliente_telefono,
+          cliente_fiel: ficha.cliente_fiel || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -191,6 +289,27 @@ export class SupabaseService {
   }
   
   // Eliminar ficha (auto + todos sus servicios)
+  // Eliminar servicio individual
+  static async deleteService(serviceId: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🗑️ [SUPABASE] Eliminando servicio ID:', serviceId);
+      
+      const { error } = await supabase
+        .from('servicios')
+        .delete()
+        .eq('id', serviceId);
+
+      if (error) throw error;
+
+      console.log('✅ [SUPABASE] Servicio eliminado exitosamente');
+      return { success: true };
+    } catch (error: any) {
+      console.error('❌ [SUPABASE] Error eliminando servicio:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Eliminar ficha (auto y todos sus servicios)
   static async deleteFicha(id: number): Promise<{ success: boolean; error?: string }> {
     try {
       
@@ -293,6 +412,7 @@ export class SupabaseService {
         numero_chasis: auto.numero_chasis,
         cliente_nombre: auto.cliente_nombre,
         cliente_telefono: auto.cliente_telefono,
+        cliente_fiel: auto.cliente_fiel || false,
         servicios: servicios || []
       };
       

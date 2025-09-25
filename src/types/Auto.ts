@@ -7,6 +7,7 @@ export interface Auto {
   numero_chasis?: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_fiel: boolean; // Cliente VIP/Fiel para recordatorios automáticos
   created_at: string;
   updated_at?: string;
 }
@@ -36,6 +37,7 @@ export interface AutoConServicio {
   numero_chasis?: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_fiel: boolean;
   created_at: string;
   updated_at?: string;
   
@@ -60,6 +62,7 @@ export interface AutoHistory {
   numero_chasis?: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_fiel: boolean;
   servicios: Servicio[];
 }
 

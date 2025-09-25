@@ -23,7 +23,8 @@ import {
   Add,
   DirectionsCar,
   Speed,
-  PictureAsPdf
+  PictureAsPdf,
+  Delete
 } from '@mui/icons-material';
 import { AutoHistory } from '../types/Auto';
 import { SupabaseService } from '../services/supabaseService';
@@ -47,6 +48,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
 }) => {
   const [autoHistory, setAutoHistory] = useState<AutoHistory | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deletingService, setDeletingService] = useState<number | null>(null);
 
   useEffect(() => {
     if (open && autoId) {
@@ -103,16 +105,35 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
     return new Date(dateString + 'T00:00:00').toLocaleDateString('es-ES');
   };
 
-  const getServiceStatus = (fechaTrabajo?: string) => {
-    if (!fechaTrabajo) {
-      return <Chip label="En Proceso" color="warning" size="small" />;
-    }
-    return <Chip label="Completado" color="success" size="small" />;
-  };
 
   const handleClose = () => {
     setAutoHistory(null);
     onClose();
+  };
+
+  const handleDeleteService = async (serviceId: number) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este servicio? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    setDeletingService(serviceId);
+    try {
+      const result = await SupabaseService.deleteService(serviceId);
+      
+      if (result.success) {
+        // Recargar el historial después de eliminar
+        await loadAutoHistory();
+        console.log('✅ Servicio eliminado exitosamente');
+      } else {
+        console.error('❌ Error eliminando servicio:', result.error);
+        alert('Error al eliminar el servicio: ' + result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error eliminando servicio:', error);
+      alert('Error al eliminar el servicio');
+    } finally {
+      setDeletingService(null);
+    }
   };
 
   if (!autoHistory) {
@@ -226,7 +247,6 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                         📅 Servicio #{servicios.length - index} - {formatDate(servicio.fecha_trabajo || servicio.fecha_ingreso)}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                        {getServiceStatus(servicio.fecha_trabajo)}
                         {servicio.kilometraje && (
                           <Chip 
                             icon={<Speed />} 
@@ -255,6 +275,16 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                           }}
                         >
                           <PictureAsPdf />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Eliminar servicio">
+                        <IconButton 
+                          size="small"
+                          color="error"
+                          disabled={deletingService === servicio.id}
+                          onClick={() => handleDeleteService(servicio.id)}
+                        >
+                          {deletingService === servicio.id ? <CircularProgress size={16} /> : <Delete />}
                         </IconButton>
                       </Tooltip>
                     </Box>

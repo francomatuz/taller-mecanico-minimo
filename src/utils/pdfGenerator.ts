@@ -435,7 +435,7 @@ export const generateAllServicesPDF = (autoHistory: import('../types/Auto').Auto
   };
 
   // Iterar por todos los servicios (del más reciente al más antiguo)
-  autoHistory.servicios.forEach((service, index) => {
+  autoHistory.servicios.forEach((service: any, index: number) => {
     const serviceNumber = autoHistory.servicios.length - index;
     
     // Verificar espacio para el servicio
