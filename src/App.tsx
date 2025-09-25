@@ -103,13 +103,17 @@ function App() {
   };
 
   const handleSaveFicha = async (ficha: FichaAuto) => {
+    console.log('🔍 [APP] handleSaveFicha llamado con:', ficha);
     try {
       let result;
       if (editingFicha && editingFicha.id) {
+        console.log('🔍 [APP] Actualizando ficha existente, ID:', editingFicha.id);
         result = await SupabaseService.updateFicha(editingFicha.id, ficha);
       } else {
+        console.log('🔍 [APP] Creando nueva ficha');
         result = await SupabaseService.insertFicha(ficha);
       }
+      console.log('🔍 [APP] Resultado de Supabase:', result);
 
       if (result.success) {
         showSnackbar(
@@ -193,50 +197,81 @@ function App() {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: '#1b1b1b' }}>
         <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <img 
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'center' }}>
+            <Box
+              component="img"
               src="/nicar.png" 
               alt="Taller Nicar" 
-              style={{ 
-                height: '40px', 
-                marginRight: '12px',
+              sx={{ 
+                height: { xs: '32px', sm: '40px' }, 
                 borderRadius: '4px'
               }} 
             />
-            <Typography variant="h6" component="div">
-              Taller Nicar - Sistema de Gestión
-            </Typography>
           </Box>
           <ThemeToggle />
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ mt: 2, mb: 2 }}>
+      <Container maxWidth="xl" sx={{ mt: 2, mb: 2, px: { xs: 1, sm: 2 } }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="navigation tabs">
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            aria-label="navigation tabs"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              '& .MuiTab-root': {
+                minWidth: { xs: 'auto', sm: 'auto' },
+                padding: { xs: '6px 8px', sm: '12px 16px' },
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }
+            }}
+          >
             <Tab 
               icon={<List />} 
               label="Lista de Fichas" 
               iconPosition="start"
-              sx={{ textTransform: 'none' }}
+              sx={{ 
+                textTransform: 'none',
+                '& .MuiTab-label': {
+                  display: { xs: 'none', sm: 'block' }
+                }
+              }}
             />
             <Tab 
               icon={<BarChart />} 
               label="Estadísticas" 
               iconPosition="start"
-              sx={{ textTransform: 'none' }}
+              sx={{ 
+                textTransform: 'none',
+                '& .MuiTab-label': {
+                  display: { xs: 'none', sm: 'block' }
+                }
+              }}
             />
             <Tab 
               icon={<Notifications />} 
               label="Recordatorios" 
               iconPosition="start"
-              sx={{ textTransform: 'none' }}
+              sx={{ 
+                textTransform: 'none',
+                '& .MuiTab-label': {
+                  display: { xs: 'none', sm: 'block' }
+                }
+              }}
             />
             <Tab 
               icon={<Settings />} 
               label="Configuración" 
               iconPosition="start"
-              sx={{ textTransform: 'none' }}
+              sx={{ 
+                textTransform: 'none',
+                '& .MuiTab-label': {
+                  display: { xs: 'none', sm: 'block' }
+                }
+              }}
             />
           </Tabs>
         </Box>

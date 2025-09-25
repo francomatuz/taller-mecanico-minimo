@@ -170,15 +170,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
       checkExistingPatente(value.trim());
     }
 
-    // Validación en tiempo real para trabajo realizado
-    if (field === 'trabajo_realizado' && typeof value === 'string') {
-      const trabajo = value.trim();
-      if (trabajo.length > 0 && trabajo.length < 3) {
-        setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado debe tener al menos 3 caracteres' }));
-      } else if (trabajo.length >= 3) {
-        setErrors(prev => ({ ...prev, trabajo_realizado: undefined }));
-      }
-    }
+    // Trabajo realizado es opcional, sin validación en tiempo real
   };
 
   const checkExistingPatente = async (patente: string) => {
@@ -198,22 +190,16 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔍 [FORM] handleSubmit llamado');
+    console.log('🔍 [FORM] Datos del formulario:', formData);
     
     if (!validateForm()) {
+      console.log('❌ [FORM] Validación falló');
       return;
     }
+    console.log('✅ [FORM] Validación pasó');
 
-    // Verificar si el trabajo realizado está vacío o es muy corto
-    if (!formData.trabajo_realizado || formData.trabajo_realizado.trim() === '') {
-      setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado es obligatorio' }));
-      return;
-    }
-
-    // Verificar que el trabajo realizado tenga al menos 3 caracteres
-    if (formData.trabajo_realizado.trim().length < 3) {
-      setErrors(prev => ({ ...prev, trabajo_realizado: 'El trabajo realizado debe tener al menos 3 caracteres' }));
-      return;
-    }
+    // Trabajo realizado es opcional, no validamos
 
     const fichaData: FichaAuto = {
       marca: formData.marca.trim(),
@@ -234,7 +220,9 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     };
 
     console.log('💾 [FORM] Enviando ficha para guardar:', fichaData);
+    console.log('🔍 [FORM] Llamando a onSave...');
     onSave(fichaData);
+    console.log('✅ [FORM] onSave llamado exitosamente');
   };
 
   return (
@@ -274,7 +262,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
           </Box>
         )}
         
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth error={!!errors.marca}>
               <InputLabel>Marca</InputLabel>
@@ -425,7 +413,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
           Información del Cliente
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
@@ -479,7 +467,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
           Detalles del Trabajo
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           <Grid item xs={12}>
             <TextField
               fullWidth
@@ -507,12 +495,12 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Trabajo Realizado"
+              label="Trabajo Realizado (Opcional)"
               multiline
               rows={4}
               value={formData.trabajo_realizado}
               onChange={(e) => handleInputChange('trabajo_realizado', e.target.value)}
-              placeholder="Describe detalladamente el trabajo realizado..."
+              placeholder="Describe detalladamente el trabajo realizado (opcional)..."
             />
           </Grid>
 

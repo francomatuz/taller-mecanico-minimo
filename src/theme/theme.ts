@@ -46,6 +46,18 @@ export const lightTheme = createTheme({
         },
       },
     },
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          minHeight: '56px',
+          padding: '0 8px',
+          '@media (min-width: 600px)': {
+            minHeight: '64px',
+            padding: '0 16px',
+          },
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {

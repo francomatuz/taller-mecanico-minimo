@@ -198,12 +198,19 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" component="h1">
+    <Box sx={{ px: { xs: 0, sm: 1 } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 3,
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           Fichas de Autos ({filteredFichas.length})
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<Refresh />}
@@ -238,11 +245,11 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
         sx={{ mb: 3 }}
       />
 
-      <Grid container spacing={2}>
+      <Grid container spacing={{ xs: 1, sm: 2 }}>
         {filteredFichas.map((ficha) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={ficha.id}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flexGrow: 1, p: 2 }}>
+              <CardContent sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                   <Box>
                     <Typography variant="subtitle1" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -405,6 +412,7 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
         onClose={() => setViewDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        fullScreen={false}
       >
         <DialogTitle>
           Detalles de la Ficha - {selectedFicha?.marca} {selectedFicha?.modelo}

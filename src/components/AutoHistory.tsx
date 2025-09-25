@@ -60,6 +60,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
       setAutoHistory(null);
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, autoId]);
 
   const loadAutoHistory = async () => {
@@ -155,7 +156,13 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
   console.log('🎨 Servicios para mostrar:', servicios);
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="lg" 
+      fullWidth
+      fullScreen={false}
+    >
       <DialogTitle>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
