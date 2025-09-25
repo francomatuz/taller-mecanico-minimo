@@ -13,7 +13,7 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { CarRepair, List, Settings, BarChart, Notifications } from '@mui/icons-material';
+import { List, Settings, BarChart, Notifications } from '@mui/icons-material';
 import FichaForm from './components/FichaForm';
 import { SupabaseService } from './services/supabaseService';
 import FichasList from './components/FichasList';
@@ -191,12 +191,22 @@ function App() {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" elevation={0} sx={{ bgcolor: 'primary.main' }}>
+      <AppBar position="static" elevation={0} sx={{ bgcolor: '#1b1b1b' }}>
         <Toolbar>
-          <CarRepair sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Taller Mecánico - Sistema de Gestión
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <img 
+              src="/nicar.png" 
+              alt="Taller Nicar" 
+              style={{ 
+                height: '40px', 
+                marginRight: '12px',
+                borderRadius: '4px'
+              }} 
+            />
+            <Typography variant="h6" component="div">
+              Taller Nicar - Sistema de Gestión
+            </Typography>
+          </Box>
           <ThemeToggle />
         </Toolbar>
       </AppBar>

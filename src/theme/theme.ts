@@ -1,16 +1,20 @@
 import { createTheme } from '@mui/material/styles';
 
-// Tema claro (por defecto)
+// Tema claro - Taller Nicar (Blanco, Rojo, Negro)
 export const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#d32f2f', // Rojo principal del taller
+      light: '#ff6659',
+      dark: '#9a0007',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#dc004e',
+      main: '#424242', // Negro/gris oscuro
+      light: '#6d6d6d',
+      dark: '#1b1b1b',
+      contrastText: '#ffffff',
     },
     background: {
       default: '#fafafa',
@@ -37,7 +41,7 @@ export const lightTheme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1976d2',
+          backgroundColor: '#1b1b1b', // Negro del taller
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         },
       },
@@ -62,17 +66,21 @@ export const lightTheme = createTheme({
   },
 });
 
-// Tema oscuro
+// Tema oscuro - Taller Nicar (adaptado para modo oscuro)
 export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9',
-      light: '#bbdefb',
-      dark: '#42a5f5',
+      main: '#ff5722', // Rojo más claro para modo oscuro
+      light: '#ff8a65',
+      dark: '#d84315',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#f48fb1',
+      main: '#9e9e9e', // Gris claro para modo oscuro
+      light: '#cfcfcf',
+      dark: '#616161',
+      contrastText: '#000000',
     },
     background: {
       default: '#121212',
