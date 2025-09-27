@@ -41,8 +41,6 @@ export class SupabaseService {
           repuestos_utilizados: ultimoServicio?.repuestos_utilizados,
           trabajo_realizado: ultimoServicio?.trabajo_realizado,
           observaciones: ultimoServicio?.observaciones,
-          es_service: ultimoServicio?.es_service,
-          proximo_service: ultimoServicio?.proximo_service,
           servicio_id: ultimoServicio?.id
         });
       }
@@ -154,9 +152,7 @@ export class SupabaseService {
             orden_trabajo: ficha.orden_trabajo,
             repuestos_utilizados: ficha.repuestos_utilizados,
             trabajo_realizado: ficha.trabajo_realizado,
-            observaciones: ficha.observaciones,
-            es_service: ficha.es_service || false,
-            proximo_service: ficha.proximo_service || null
+            observaciones: ficha.observaciones
           }])
           .select()
           .single();
@@ -220,9 +216,7 @@ export class SupabaseService {
             orden_trabajo: ficha.orden_trabajo,
             repuestos_utilizados: ficha.repuestos_utilizados,
             trabajo_realizado: ficha.trabajo_realizado,
-            observaciones: ficha.observaciones,
-            es_service: ficha.es_service || false,
-            proximo_service: ficha.proximo_service || null
+            observaciones: ficha.observaciones
           }])
           .select()
           .single();
@@ -244,15 +238,13 @@ export class SupabaseService {
     }
   }
   
-  // Actualizar ficha (actualizar auto + opcionalmente crear nuevo servicio)  
+  // Actualizar ficha (actualizar auto + opcionalmente crear nuevo servicio)
   static async updateFicha(id: number, ficha: any): Promise<{ success: boolean; error?: string; serviceId?: number }> {
     try {
       console.log('🔍 [SUPABASE] Iniciando updateFicha para ID:', id);
       console.log('🔍 [SUPABASE] Datos recibidos:', ficha);
-      console.log('🔍 [SUPABASE] Trabajo realizado:', ficha.trabajo_realizado);
-      console.log('🔍 [SUPABASE] Kilometraje:', ficha.kilometraje);
       
-      // Actualizar datos del auto SIEMPRE
+      // Actualizar datos del auto
       const { error: autoError } = await supabase
         .from('autos')
         .update({
@@ -268,147 +260,56 @@ export class SupabaseService {
         })
         .eq('id', id);
       
-      if (autoError) {
-        console.error('❌ [SUPABASE] Error actualizando auto:', autoError);
-        throw autoError;
-      }
-      
+      if (autoError) throw autoError;
       console.log('✅ [SUPABASE] Auto actualizado correctamente');
       
-      // Actualizar último servicio SIEMPRE (kilometraje y/o es_service)
-      const tieneActualizacionesServicio = ficha.kilometraje || ficha.es_service !== undefined;
+      // Solo crear nuevo servicio si hay información de servicio nueva
+      const tieneInformacionServicio = ficha.trabajo_realizado && ficha.trabajo_realizado.trim() !== '';
       
-      if (tieneActualizacionesServicio) {
-        console.log('🔍 [SUPABASE] Actualizando último servicio');
+      if (tieneInformacionServicio) {
+        console.log('🔍 [SUPABASE] Hay información de servicio, creando nuevo servicio');
         
-        // Obtener el último servicio del auto
-        const { data: ultimoServicio, error: servicioError } = await supabase
+        // Verificar duplicados antes de crear el servicio
+        const esDuplicado = await this.checkDuplicateService(
+          id, 
+          ficha.trabajo_realizado, 
+          ficha.fecha_trabajo
+        );
+        
+        if (esDuplicado) {
+          console.log('🚫 [SUPABASE] Servicio duplicado detectado, no se creará nuevo servicio');
+          return { 
+            success: true, 
+            error: 'Ya existe un servicio con el mismo trabajo realizado para este vehículo. Los datos del auto se actualizaron correctamente.' 
+          };
+        }
+        
+        const { data: nuevoServicio, error: servicioError } = await supabase
           .from('servicios')
-          .select('id, es_service, fecha_trabajo')
-          .eq('auto_id', id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .insert([{
+            auto_id: id,
+            fecha_ingreso: ficha.fecha_ingreso,
+            fecha_trabajo: ficha.fecha_trabajo,
+            kilometraje: ficha.kilometraje,
+            orden_trabajo: ficha.orden_trabajo,
+            repuestos_utilizados: ficha.repuestos_utilizados,
+            trabajo_realizado: ficha.trabajo_realizado,
+            observaciones: ficha.observaciones
+          }])
+          .select()
           .single();
         
-        if (servicioError) {
-          console.error('❌ [SUPABASE] Error obteniendo último servicio:', servicioError);
-        } else if (ultimoServicio) {
-          // Preparar datos de actualización
-          const updateData: any = {};
-          
-          if (ficha.kilometraje) {
-            updateData.kilometraje = ficha.kilometraje;
-          }
-          
-          if (ficha.es_service !== undefined) {
-            updateData.es_service = ficha.es_service;
-            
-            // Si se marca como service, calcular próximo service
-            if (ficha.es_service) {
-              // Usar fecha_trabajo del último servicio o fecha_trabajo del formulario
-              const fechaParaCalcular = ultimoServicio.fecha_trabajo || ficha.fecha_trabajo;
-              
-              if (fechaParaCalcular) {
-                const fechaService = new Date(fechaParaCalcular);
-                const proximoService = new Date(fechaService);
-                proximoService.setMonth(proximoService.getMonth() + 12);
-                updateData.proximo_service = proximoService.toISOString().split('T')[0];
-                console.log('🔧 [SUPABASE] Service marcado, próximo service:', updateData.proximo_service);
-                console.log('🔧 [SUPABASE] Fecha base usada:', fechaParaCalcular);
-              } else {
-                console.log('⚠️ [SUPABASE] No hay fecha_trabajo para calcular próximo service');
-                // Si no hay fecha, usar fecha actual + 12 meses
-                const proximoService = new Date();
-                proximoService.setMonth(proximoService.getMonth() + 12);
-                updateData.proximo_service = proximoService.toISOString().split('T')[0];
-                console.log('🔧 [SUPABASE] Service marcado con fecha actual + 12 meses:', updateData.proximo_service);
-              }
-            } else if (!ficha.es_service) {
-              // Si se desmarca como service, limpiar próximo service
-              updateData.proximo_service = null;
-            }
-          }
-          
-          // Actualizar el último servicio
-          const { error: updateError } = await supabase
-            .from('servicios')
-            .update(updateData)
-            .eq('id', ultimoServicio.id);
-          
-          if (updateError) {
-            console.error('❌ [SUPABASE] Error actualizando último servicio:', updateError);
-          } else {
-            console.log('✅ [SUPABASE] Último servicio actualizado, ID:', ultimoServicio.id);
-          }
-        }
-      }
-      
-      // Solo crear servicio si hay trabajo realizado NUEVO Y DIFERENTE
-      const tieneTrabajoRealizado = ficha.trabajo_realizado && ficha.trabajo_realizado.trim() !== '';
-      
-      if (!tieneTrabajoRealizado) {
-        console.log('ℹ️ [SUPABASE] No hay trabajo realizado nuevo, solo se actualizó el auto');
+        if (servicioError) throw servicioError;
+        console.log('✅ [SUPABASE] Nuevo servicio creado:', nuevoServicio.id);
+        
+        return { success: true, serviceId: nuevoServicio.id };
+      } else {
+        console.log('ℹ️ [SUPABASE] No hay información de servicio nueva, solo se actualizó el auto');
         return { success: true };
       }
-      
-      // Verificar si el trabajo realizado es realmente nuevo (diferente al último servicio)
-      const { data: ultimoServicio } = await supabase
-        .from('servicios')
-        .select('trabajo_realizado')
-        .eq('auto_id', id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      const trabajoRealizadoActual = ultimoServicio?.trabajo_realizado?.trim() || '';
-      const trabajoRealizadoNuevo = ficha.trabajo_realizado.trim();
-      
-      if (trabajoRealizadoActual === trabajoRealizadoNuevo) {
-        console.log('ℹ️ [SUPABASE] El trabajo realizado es el mismo que el último servicio, no se creará duplicado');
-        return { success: true };
-      }
-      
-      console.log('🔍 [SUPABASE] Hay trabajo realizado, creando nuevo servicio');
-      
-      // Verificar duplicados
-      const esDuplicado = await this.checkDuplicateService(id, ficha.trabajo_realizado, ficha.fecha_trabajo);
-      
-      if (esDuplicado) {
-        console.log('🚫 [SUPABASE] Servicio duplicado detectado, no se creará nuevo servicio');
-        return { 
-          success: true, 
-          error: 'Ya existe un servicio con el mismo trabajo realizado para este vehículo. Los datos del auto se actualizaron correctamente.' 
-        };
-      }
-      
-      // Crear nuevo servicio
-      const { data: nuevoServicio, error: servicioError } = await supabase
-        .from('servicios')
-        .insert([{
-          auto_id: id,
-          fecha_ingreso: ficha.fecha_ingreso,
-          fecha_trabajo: ficha.fecha_trabajo,
-          kilometraje: ficha.kilometraje,
-          orden_trabajo: ficha.orden_trabajo,
-          repuestos_utilizados: ficha.repuestos_utilizados,
-          trabajo_realizado: ficha.trabajo_realizado,
-          observaciones: ficha.observaciones,
-          es_service: ficha.es_service || false,
-          proximo_service: ficha.proximo_service || null
-        }])
-        .select()
-        .single();
-      
-      if (servicioError) {
-        console.error('❌ [SUPABASE] Error creando servicio:', servicioError);
-        throw servicioError;
-      }
-      
-      console.log('✅ [SUPABASE] Nuevo servicio creado:', nuevoServicio.id);
-      return { success: true, serviceId: nuevoServicio.id };
       
     } catch (error: any) {
-      console.error('💥 [SUPABASE] Error en updateFicha:', error);
+      console.error('💥 [SUPABASE] Error actualizando ficha:', error);
       return { success: false, error: error.message };
     }
   }
@@ -431,74 +332,6 @@ export class SupabaseService {
     } catch (error: any) {
       console.error('❌ [SUPABASE] Error eliminando servicio:', error);
       return { success: false, error: error.message };
-    }
-  }
-
-  // Función temporal para arreglar servicios existentes que tienen es_service = true pero proximo_service = null
-  static async fixExistingServices(): Promise<{ success: boolean; error?: string; fixed: number }> {
-    try {
-      console.log('🔧 [SUPABASE] Arreglando servicios existentes...');
-      
-      // Buscar servicios que tienen es_service = true pero proximo_service = null
-      const { data: serviciosProblematicos, error: selectError } = await supabase
-        .from('servicios')
-        .select('id, fecha_trabajo, es_service, proximo_service')
-        .eq('es_service', true)
-        .is('proximo_service', null);
-      
-      if (selectError) throw selectError;
-      
-      console.log(`🔍 [SUPABASE] Encontrados ${serviciosProblematicos?.length || 0} servicios para arreglar`);
-      
-      if (!serviciosProblematicos || serviciosProblematicos.length === 0) {
-        return { success: true, fixed: 0 };
-      }
-      
-      let fixed = 0;
-      
-      for (const servicio of serviciosProblematicos) {
-        if (servicio.fecha_trabajo) {
-          // Calcular próximo service basado en fecha_trabajo + 12 meses
-          const fechaService = new Date(servicio.fecha_trabajo);
-          const proximoService = new Date(fechaService);
-          proximoService.setMonth(proximoService.getMonth() + 12);
-          
-          const { error: updateError } = await supabase
-            .from('servicios')
-            .update({ proximo_service: proximoService.toISOString().split('T')[0] })
-            .eq('id', servicio.id);
-          
-          if (updateError) {
-            console.error(`❌ [SUPABASE] Error arreglando servicio ${servicio.id}:`, updateError);
-          } else {
-            fixed++;
-            console.log(`✅ [SUPABASE] Servicio ${servicio.id} arreglado, próximo service: ${proximoService.toISOString().split('T')[0]}`);
-          }
-        } else {
-          // Si no hay fecha_trabajo, usar fecha actual + 12 meses
-          const proximoService = new Date();
-          proximoService.setMonth(proximoService.getMonth() + 12);
-          
-          const { error: updateError } = await supabase
-            .from('servicios')
-            .update({ proximo_service: proximoService.toISOString().split('T')[0] })
-            .eq('id', servicio.id);
-          
-          if (updateError) {
-            console.error(`❌ [SUPABASE] Error arreglando servicio ${servicio.id}:`, updateError);
-          } else {
-            fixed++;
-            console.log(`✅ [SUPABASE] Servicio ${servicio.id} arreglado con fecha actual + 12 meses`);
-          }
-        }
-      }
-      
-      console.log(`🎉 [SUPABASE] Arreglados ${fixed} servicios`);
-      return { success: true, fixed };
-      
-    } catch (error: any) {
-      console.error('❌ [SUPABASE] Error arreglando servicios:', error);
-      return { success: false, error: error.message, fixed: 0 };
     }
   }
 
@@ -633,24 +466,6 @@ export class SupabaseService {
     } catch (error: any) {
       console.error('Error buscando auto por patente:', error);
       return null;
-    }
-  }
-
-  // Obtener todos los servicios de un auto para WhatsApp
-  static async getAllServicesForAuto(autoId: number): Promise<any[]> {
-    try {
-      const { data: servicios, error } = await supabase
-        .from('servicios')
-        .select('*')
-        .eq('auto_id', autoId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      return servicios || [];
-    } catch (error) {
-      console.error(`❌ [SUPABASE] Error obteniendo servicios para auto ${autoId}:`, error);
-      return [];
     }
   }
 }

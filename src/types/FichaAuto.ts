@@ -15,6 +15,8 @@ export interface FichaAuto {
   repuestos_utilizados?: string;
   trabajo_realizado?: string;
   observaciones?: string;
+  es_service?: boolean;
+  proximo_service?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -35,5 +37,6 @@ export interface FichaFormData {
   repuestos_utilizados: string;
   trabajo_realizado: string;
   observaciones: string;
+  es_service: boolean;
 }
 

@@ -251,7 +251,16 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        📅 Servicio #{servicios.length - index} - {formatDate(servicio.fecha_trabajo || servicio.fecha_ingreso)}
+                        {servicio.es_service ? '🔧 Service' : '📅 Servicio'} #{servicios.length - index} - {formatDate(servicio.fecha_trabajo || servicio.fecha_ingreso)}
+                        {servicio.es_service && (
+                          <Chip 
+                            label="Service" 
+                            size="small" 
+                            color="success" 
+                            variant="filled"
+                            sx={{ ml: 1, fontSize: '0.75rem' }}
+                          />
+                        )}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
                         {servicio.kilometraje && (
@@ -259,6 +268,14 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                             icon={<Speed />} 
                             label={`${servicio.kilometraje.toLocaleString()} km`} 
                             size="small" 
+                            variant="outlined"
+                          />
+                        )}
+                        {servicio.proximo_service && (
+                          <Chip 
+                            label={`Próximo Service: ${formatDate(servicio.proximo_service)}`}
+                            size="small" 
+                            color="info"
                             variant="outlined"
                           />
                         )}

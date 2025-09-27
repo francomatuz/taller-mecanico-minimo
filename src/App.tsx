@@ -162,6 +162,7 @@ function App() {
     setSelectedAutoId(null);
   };
 
+
   const handleAddService = (autoId: number) => {
     // Buscar el auto en la lista para obtener sus datos
     const auto = fichas.find(f => f.id === autoId);
@@ -297,11 +298,13 @@ function App() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h5" color="text.secondary">
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>
               Configuración
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+            
+            
+            <Typography variant="body1">
               Aquí podrás configurar las opciones de WhatsApp y otras funcionalidades.
             </Typography>
           </Box>

@@ -39,10 +39,6 @@ interface StatisticsData {
   // Servicios
   totalServicios: number;
   serviciosPorMes: Array<{ mes: string; count: number }>;
-  tiempoPromedioEntreServicios: number;
-  
-  // Negocio
-  kilometrajePromedio: number;
   
   // Temporales
   mesOcupado: { mes: string; servicios: number };
@@ -127,17 +123,24 @@ const Statistics: React.FC = () => {
     const clientesFieles = fichas.filter(f => f.cliente_fiel).length;
     const clientesRegulares = totalAutos - clientesFieles;
 
-    // Clientes con más servicios
-    const clientesServicios = fichas.reduce((acc, ficha) => {
-      const nombre = ficha.cliente_nombre;
-      acc[nombre] = (acc[nombre] || 0) + 1;
+    // Clientes con más servicios (contando servicios reales, no autos)
+    console.log('📊 [STATS] Calculando servicios por cliente...');
+    const clientesServicios = historiales.reduce((acc, historial) => {
+      const nombre = historial.cliente_nombre;
+      const cantidadServicios = historial.servicios.length;
+      console.log(`📊 [STATS] Cliente ${nombre}: ${cantidadServicios} servicios`);
+      acc[nombre] = (acc[nombre] || 0) + cantidadServicios;
       return acc;
     }, {} as Record<string, number>);
 
+    console.log('📊 [STATS] Servicios por cliente calculados:', clientesServicios);
+
     const clientesConMasServicios = Object.entries(clientesServicios)
-      .map(([nombre, servicios]) => ({ nombre, servicios }))
+      .map(([nombre, servicios]) => ({ nombre, servicios: servicios as number }))
       .sort((a, b) => b.servicios - a.servicios)
       .slice(0, 10);
+
+    console.log('📊 [STATS] Top clientes con más servicios:', clientesConMasServicios);
 
     // Servicios
     const totalServicios = historiales.reduce((acc, historial) => acc + historial.servicios.length, 0);
@@ -145,14 +148,6 @@ const Statistics: React.FC = () => {
     // Servicios por mes (últimos 12 meses)
     const serviciosPorMes = calcularServiciosPorMes(historiales);
 
-    // Tiempo promedio entre servicios (en días)
-    const tiempoPromedioEntreServicios = calcularTiempoPromedioServicios(historiales);
-
-    // Kilometraje promedio
-    const kilometrajes = fichas.filter(f => f.kilometraje && f.kilometraje > 0).map(f => f.kilometraje!);
-    const kilometrajePromedio = kilometrajes.length > 0 
-      ? Math.round(kilometrajes.reduce((a, b) => a + b, 0) / kilometrajes.length)
-      : 0;
 
     // Mes más ocupado
     const mesOcupado = serviciosPorMes.reduce((max, mes) => 
@@ -162,8 +157,28 @@ const Statistics: React.FC = () => {
     
     console.log('📅 [STATS] Mes más ocupado calculado:', mesOcupado);
 
-    // Día más popular (simulado por ahora)
-    const diaPopular = { dia: 'Lunes', servicios: Math.round(totalServicios * 0.18) };
+    // Día más popular (calculado por día de la semana)
+    console.log('📊 [STATS] Calculando día más popular...');
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const serviciosPorDia: Record<string, number> = {};
+    
+    historiales.forEach(historial => {
+      historial.servicios.forEach((servicio: any) => {
+        const fecha = new Date(servicio.fecha_ingreso);
+        const diaSemana = diasSemana[fecha.getDay()];
+        serviciosPorDia[diaSemana] = (serviciosPorDia[diaSemana] || 0) + 1;
+      });
+    });
+    
+    console.log('📊 [STATS] Servicios por día:', serviciosPorDia);
+    
+    const diaPopular = Object.entries(serviciosPorDia)
+      .reduce((max, [dia, count]) => 
+        count > max.servicios ? { dia, servicios: count } : max,
+        { dia: 'N/A', servicios: 0 }
+      );
+    
+    console.log('📊 [STATS] Día más popular calculado:', diaPopular);
 
     // Autos con más historial
     const autosConMasHistorial = historiales
@@ -187,8 +202,6 @@ const Statistics: React.FC = () => {
       clientesConMasServicios,
       totalServicios,
       serviciosPorMes,
-      tiempoPromedioEntreServicios,
-      kilometrajePromedio,
       mesOcupado,
       diaPopular,
       autosConMasHistorial
@@ -234,27 +247,6 @@ const Statistics: React.FC = () => {
       .slice(0, 12);
   };
 
-  const calcularTiempoPromedioServicios = (historiales: any[]) => {
-    let totalDias = 0;
-    let contadorIntervalos = 0;
-
-    historiales.forEach(historial => {
-      const servicios = historial.servicios.sort((a: any, b: any) => 
-        new Date(a.fecha_ingreso).getTime() - new Date(b.fecha_ingreso).getTime()
-      );
-
-      for (let i = 1; i < servicios.length; i++) {
-        const fechaAnterior = new Date(servicios[i - 1].fecha_ingreso);
-        const fechaActual = new Date(servicios[i].fecha_ingreso);
-        const diferenciaDias = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60 * 60 * 24);
-        
-        totalDias += diferenciaDias;
-        contadorIntervalos++;
-      }
-    });
-
-    return contadorIntervalos > 0 ? Math.round(totalDias / contadorIntervalos) : 0;
-  };
 
   if (loading) {
     return (
@@ -398,33 +390,6 @@ const Statistics: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* Estadísticas de Negocio */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                💰 Estadísticas de Negocio
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Kilometraje Promedio
-                </Typography>
-                <Typography variant="h5" color="primary">
-                  {statistics.kilometrajePromedio.toLocaleString()} km
-                </Typography>
-              </Box>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Tiempo Promedio Entre Servicios
-                </Typography>
-                <Typography variant="h5" color="warning.main">
-                  {statistics.tiempoPromedioEntreServicios} días
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
 
         {/* Estadísticas Temporales */}
         <Grid item xs={12} md={4}>

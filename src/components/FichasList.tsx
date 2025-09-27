@@ -35,7 +35,8 @@ import {
 import { FichaAuto } from '../types/FichaAuto';
 import { AutoConServicio } from '../types/Auto';
 import { generatePDF } from '../utils/pdfGenerator';
-import { openWhatsAppWeb, generateReminderMessage } from '../services/whatsappPuppeteer';
+import { openWhatsAppWeb, generateReminderMessage, generateFichaCompletaMessage } from '../services/whatsappPuppeteer';
+import { SupabaseService } from '../services/supabaseService';
 import '../types/electronAPI';
 
 interface FichasListProps {
@@ -169,6 +170,30 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
       openWhatsAppWeb(ficha.cliente_telefono, message);
       
       console.log('📱 WhatsApp abierto para:', ficha.cliente_nombre, ficha.cliente_telefono);
+    } else {
+      console.warn('⚠️ No hay teléfono disponible para enviar WhatsApp');
+      alert('No hay número de teléfono disponible para este cliente');
+    }
+    handleMenuClose();
+  };
+
+  const handleWhatsAppFichaCompleta = async (ficha: FichaAuto) => {
+    if (ficha.cliente_telefono) {
+      try {
+        // Obtener todos los servicios del auto
+        const servicios = await SupabaseService.getAllServicesForAuto(ficha.id || 0);
+        
+        // Generar mensaje completo de ficha
+        const message = generateFichaCompletaMessage(ficha, servicios);
+        
+        // Abrir WhatsApp Web con el mensaje
+        openWhatsAppWeb(ficha.cliente_telefono, message);
+        
+        console.log('📱 WhatsApp Ficha Completa abierto para:', ficha.cliente_nombre, ficha.cliente_telefono);
+      } catch (error) {
+        console.error('❌ Error obteniendo servicios para WhatsApp:', error);
+        alert('Error al obtener los servicios del auto');
+      }
     } else {
       console.warn('⚠️ No hay teléfono disponible para enviar WhatsApp');
       alert('No hay número de teléfono disponible para este cliente');
@@ -387,7 +412,13 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
           <ListItemIcon>
             <WhatsApp fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Enviar por WhatsApp</ListItemText>
+          <ListItemText>Recordatorio WhatsApp</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => menuFicha && handleWhatsAppFichaCompleta(menuFicha)}>
+          <ListItemIcon>
+            <WhatsApp fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Enviar Ficha Completa</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => menuFicha && handleEmail(menuFicha)}>
           <ListItemIcon>

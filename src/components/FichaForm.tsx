@@ -52,6 +52,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     repuestos_utilizados: '',
     trabajo_realizado: '',
     observaciones: '',
+    es_service: false
   });
 
   const [errors, setErrors] = useState<Partial<FichaFormData>>({});
@@ -115,6 +116,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
         repuestos_utilizados: ficha.repuestos_utilizados || '',
         trabajo_realizado: ficha.trabajo_realizado || '',
         observaciones: ficha.observaciones || '',
+        es_service: ficha.es_service || false
       });
     }
   }, [ficha]);
@@ -201,25 +203,49 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
 
     // Trabajo realizado es opcional, no validamos
 
+    // Construir datos básicos del auto (sin kilometraje)
     const fichaData: FichaAuto = {
       marca: formData.marca.trim(),
       modelo: formData.modelo.trim(),
       año: parseInt(formData.año),
       patente: formData.patente.trim(),
       numero_chasis: formData.numero_chasis.trim() || undefined,
-      kilometraje: formData.kilometraje ? parseInt(formData.kilometraje) : undefined,
       fecha_ingreso: formData.fecha_ingreso,
-      fecha_trabajo: formData.fecha_trabajo || undefined,
       cliente_nombre: formData.cliente_nombre.trim(),
       cliente_telefono: formData.cliente_telefono.trim(),
       cliente_fiel: formData.cliente_fiel,
-      orden_trabajo: formData.orden_trabajo.trim() || undefined,
-      repuestos_utilizados: formData.repuestos_utilizados.trim() || undefined,
-      trabajo_realizado: formData.trabajo_realizado.trim() || undefined,
-      observaciones: formData.observaciones.trim() || undefined,
     };
 
+    // Siempre enviar kilometraje y es_service (se actualiza en el último servicio)
+    fichaData.kilometraje = formData.kilometraje ? parseInt(formData.kilometraje) : undefined;
+    fichaData.es_service = formData.es_service;
+
+    // Solo agregar datos de servicio si hay trabajo realizado (nuevo servicio)
+    const tieneTrabajoRealizado = formData.trabajo_realizado && formData.trabajo_realizado.trim() !== '';
+    
+         if (tieneTrabajoRealizado) {
+           console.log('🔍 [FORM] Hay trabajo realizado, agregando datos de servicio');
+           fichaData.fecha_trabajo = formData.fecha_trabajo || undefined;
+           fichaData.orden_trabajo = formData.orden_trabajo.trim() || undefined;
+           fichaData.repuestos_utilizados = formData.repuestos_utilizados.trim() || undefined;
+           fichaData.trabajo_realizado = formData.trabajo_realizado.trim();
+           fichaData.observaciones = formData.observaciones.trim() || undefined;
+           
+           // Si es un service, calcular la fecha del próximo service
+           if (formData.es_service && formData.fecha_trabajo) {
+             const fechaService = new Date(formData.fecha_trabajo);
+             const proximoService = new Date(fechaService);
+             proximoService.setMonth(proximoService.getMonth() + 12);
+             fichaData.proximo_service = proximoService.toISOString().split('T')[0];
+             console.log('🔧 [FORM] Service detectado, próximo service:', fichaData.proximo_service);
+           }
+         } else {
+           console.log('ℹ️ [FORM] No hay trabajo realizado, solo actualizando datos del auto');
+         }
+
     console.log('💾 [FORM] Enviando ficha para guardar:', fichaData);
+    console.log('🔍 [FORM] Trabajo realizado enviado:', fichaData.trabajo_realizado);
+    console.log('🔍 [FORM] Kilometraje enviado:', fichaData.kilometraje);
     console.log('🔍 [FORM] Llamando a onSave...');
     onSave(fichaData);
     console.log('✅ [FORM] onSave llamado exitosamente');
@@ -453,6 +479,29 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
                   </Typography>
                   <Typography variant="body2" component="div" color="text.secondary">
                     Activar para enviar recordatorios automáticos de servicios
+                  </Typography>
+                </Box>
+              }
+              sx={{ alignItems: 'flex-start', mt: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.es_service}
+                  onChange={(e) => handleInputChange('es_service', e.target.checked)}
+                  color="success"
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body1" component="span" sx={{ fontWeight: 500 }}>
+                    🔧 Se hizo Service
+                  </Typography>
+                  <Typography variant="body2" component="div" color="text.secondary">
+                    Mantenimiento programado (recordatorio en 12 meses)
                   </Typography>
                 </Box>
               }

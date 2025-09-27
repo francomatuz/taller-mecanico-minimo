@@ -22,6 +22,8 @@ export interface Servicio {
   repuestos_utilizados?: string;
   trabajo_realizado?: string;
   observaciones?: string;
+  es_service?: boolean;
+  proximo_service?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -50,6 +52,8 @@ export interface AutoConServicio {
   repuestos_utilizados?: string;
   trabajo_realizado?: string;
   observaciones?: string;
+  es_service?: boolean;
+  proximo_service?: string;
 }
 
 // Para mostrar historial completo de un auto

@@ -77,7 +77,14 @@ const ReminderNotifications: React.FC = () => {
   const updateConfig = (newConfig: Partial<typeof config>) => {
     const updatedConfig = { ...config, ...newConfig };
     setConfig(updatedConfig);
-    reminderSystem.setConfig(updatedConfig);
+    
+    // Actualizar configuración en el sistema de recordatorios
+    if (newConfig.enabled !== undefined) {
+      reminderSystem.setEnabled(newConfig.enabled);
+    }
+    if (newConfig.monthsAfterService !== undefined) {
+      reminderSystem.setReminderInterval(newConfig.monthsAfterService);
+    }
   };
 
   // Cargar recordatorios al montar el componente
