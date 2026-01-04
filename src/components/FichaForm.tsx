@@ -216,36 +216,45 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
       cliente_fiel: formData.cliente_fiel,
     };
 
-    // Siempre enviar kilometraje y es_service (se actualiza en el último servicio)
+    // Siempre enviar kilometraje, es_service y fecha_trabajo (se actualiza en el último servicio)
     fichaData.kilometraje = formData.kilometraje ? parseInt(formData.kilometraje) : undefined;
     fichaData.es_service = formData.es_service;
 
-    // Solo agregar datos de servicio si hay trabajo realizado (nuevo servicio)
-    const tieneTrabajoRealizado = formData.trabajo_realizado && formData.trabajo_realizado.trim() !== '';
-    
-         if (tieneTrabajoRealizado) {
-           console.log('🔍 [FORM] Hay trabajo realizado, agregando datos de servicio');
-           fichaData.fecha_trabajo = formData.fecha_trabajo || undefined;
-           fichaData.orden_trabajo = formData.orden_trabajo.trim() || undefined;
-           fichaData.repuestos_utilizados = formData.repuestos_utilizados.trim() || undefined;
-           fichaData.trabajo_realizado = formData.trabajo_realizado.trim();
-           fichaData.observaciones = formData.observaciones.trim() || undefined;
-           
-           // Si es un service, calcular la fecha del próximo service
-           if (formData.es_service && formData.fecha_trabajo) {
-             const fechaService = new Date(formData.fecha_trabajo);
-             const proximoService = new Date(fechaService);
-             proximoService.setMonth(proximoService.getMonth() + 12);
-             fichaData.proximo_service = proximoService.toISOString().split('T')[0];
-             console.log('🔧 [FORM] Service detectado, próximo service:', fichaData.proximo_service);
-           }
-         } else {
-           console.log('ℹ️ [FORM] No hay trabajo realizado, solo actualizando datos del auto');
-         }
+    // Enviar fecha_trabajo solo si tiene valor (no vacío)
+    if (formData.fecha_trabajo && formData.fecha_trabajo.trim() !== '') {
+      fichaData.fecha_trabajo = formData.fecha_trabajo;
+    }
+
+    // Enviar SIEMPRE los campos del servicio para que se actualicen
+    if (formData.orden_trabajo && formData.orden_trabajo.trim() !== '') {
+      fichaData.orden_trabajo = formData.orden_trabajo.trim();
+    }
+
+    if (formData.repuestos_utilizados && formData.repuestos_utilizados.trim() !== '') {
+      fichaData.repuestos_utilizados = formData.repuestos_utilizados.trim();
+    }
+
+    if (formData.trabajo_realizado && formData.trabajo_realizado.trim() !== '') {
+      fichaData.trabajo_realizado = formData.trabajo_realizado.trim();
+    }
+
+    if (formData.observaciones && formData.observaciones.trim() !== '') {
+      fichaData.observaciones = formData.observaciones.trim();
+    }
+
+    // Si es un service, calcular la fecha del próximo service
+    if (formData.es_service && formData.fecha_trabajo) {
+      const fechaService = new Date(formData.fecha_trabajo);
+      const proximoService = new Date(fechaService);
+      proximoService.setMonth(proximoService.getMonth() + 12);
+      fichaData.proximo_service = proximoService.toISOString().split('T')[0];
+      console.log('🔧 [FORM] Service detectado, próximo service:', fichaData.proximo_service);
+    }
 
     console.log('💾 [FORM] Enviando ficha para guardar:', fichaData);
     console.log('🔍 [FORM] Trabajo realizado enviado:', fichaData.trabajo_realizado);
     console.log('🔍 [FORM] Kilometraje enviado:', fichaData.kilometraje);
+    console.log('🔍 [FORM] Fecha trabajo enviado:', fichaData.fecha_trabajo);
     console.log('🔍 [FORM] Llamando a onSave...');
     onSave(fichaData);
     console.log('✅ [FORM] onSave llamado exitosamente');
@@ -253,20 +262,35 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-      <Box 
-        component="form" 
-        onSubmit={handleSubmit} 
-        sx={{ mt: 2, maxHeight: '80vh', overflow: 'auto' }}
-        data-form-container
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%'
+        }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" color="primary">
-            Información del Vehículo
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ↑↓ Scroll en el formulario
-          </Typography>
-        </Box>
+        {/* Contenedor scrolleable del formulario */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            px: 3,
+            pt: 2,
+            pb: 1
+          }}
+          data-form-container
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" color="primary">
+              Información del Vehículo
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ↑↓ Scroll en el formulario
+            </Typography>
+          </Box>
 
         {existingAuto && !ficha && (
           <Box sx={{ 
@@ -565,8 +589,23 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
             />
           </Grid>
         </Grid>
+        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+        {/* Botones fijos en la parte inferior */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 2,
+            pt: 2,
+            pb: 2,
+            px: 3,
+            borderTop: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.default',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
           <Button
             variant="outlined"
             onClick={onCancel}

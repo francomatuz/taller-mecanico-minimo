@@ -12,6 +12,7 @@ import {
   DialogContent,
   Snackbar,
   Alert,
+  IconButton,
 } from '@mui/material';
 import { List, Settings, BarChart, Notifications } from '@mui/icons-material';
 import FichaForm from './components/FichaForm';
@@ -315,17 +316,46 @@ function App() {
       {/* Dialog para crear/editar ficha */}
       <Dialog
         open={openDialog}
-        onClose={handleCloseDialog}
+        onClose={(event, reason) => {
+          // Solo permitir cerrar con ESC, no con click en el backdrop
+          if (reason !== 'backdropClick') {
+            handleCloseDialog();
+          }
+        }}
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 2 }
+          sx: {
+            borderRadius: 2,
+            height: '90vh'
+          }
         }}
       >
-        <DialogTitle>
-          {editingFicha ? 'Editar Ficha de Auto' : 'Nueva Ficha de Auto'}
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">
+            {editingFicha ? 'Editar Ficha de Auto' : 'Nueva Ficha de Auto'}
+          </Typography>
+          <IconButton
+            onClick={handleCloseDialog}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': {
+                color: 'error.main',
+                bgcolor: 'error.lighter'
+              }
+            }}
+          >
+            <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1 }}>×</Box>
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent
+          sx={{
+            overflow: 'hidden',
+            p: 0,
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
           <FichaForm
             ficha={editingFicha}
             onSave={handleSaveFicha}
