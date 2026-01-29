@@ -219,7 +219,7 @@ export const generatePDF = (ficha: FichaAuto): jsPDF => {
   
   const datesData = [
     ['Fecha de Ingreso', formatDate(ficha.fecha_ingreso)],
-    ['Fecha de Trabajo', ficha.fecha_trabajo ? formatDate(ficha.fecha_trabajo) : 'Pendiente']
+    ['Fecha de Entrega', ficha.fecha_trabajo ? formatDate(ficha.fecha_trabajo) : 'Pendiente']
   ];
   
   yPosition = addInfoTable(doc, datesData, 30, yPosition, pageWidth - 60);
@@ -361,7 +361,7 @@ export const generateServicePDF = (autoHistory: import('../types/Auto').AutoHist
   
   const serviceDates = [
     ['Fecha de Ingreso', formatDate(service.fecha_ingreso)],
-    ['Fecha de Trabajo', service.fecha_trabajo ? formatDate(service.fecha_trabajo) : 'Pendiente'],
+    ['Fecha de Entrega', service.fecha_trabajo ? formatDate(service.fecha_trabajo) : 'Pendiente'],
     ['Kilometraje', service.kilometraje ? `${service.kilometraje.toLocaleString()} km` : 'No especificado']
   ];
   

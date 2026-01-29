@@ -320,7 +320,7 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
                 </Typography>
                 {ficha.fecha_trabajo && (
                   <Typography variant="body2" color="text.secondary">
-                    <strong>Finalizado:</strong> {new Date(ficha.fecha_trabajo + 'T00:00:00').toLocaleDateString('es-ES')}
+                    <strong>Entregado:</strong> {new Date(ficha.fecha_trabajo + 'T00:00:00').toLocaleDateString('es-ES')}
                   </Typography>
                 )}
 
@@ -501,7 +501,7 @@ const FichasList: React.FC<FichasListProps> = ({ fichas, onEdit, onDelete, onRef
                   </Typography>
                   {selectedFicha.fecha_trabajo && (
                     <Typography variant="body2" gutterBottom>
-                      <strong>Fecha de Trabajo:</strong> {new Date(selectedFicha.fecha_trabajo + 'T00:00:00').toLocaleDateString('es-ES')}
+                      <strong>Fecha de Entrega:</strong> {new Date(selectedFicha.fecha_trabajo + 'T00:00:00').toLocaleDateString('es-ES')}
                     </Typography>
                   )}
                 </Grid>

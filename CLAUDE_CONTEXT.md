@@ -53,7 +53,7 @@ El sistema usa un modelo de **auto único con múltiples servicios**:
 - id (SERIAL PRIMARY KEY)
 - auto_id (INTEGER FOREIGN KEY → autos.id ON DELETE CASCADE)
 - fecha_ingreso (DATE - cuándo ingresó al taller)
-- fecha_trabajo (DATE - cuándo se completó el trabajo)
+- fecha_trabajo (DATE - cuándo se entregó el vehículo al cliente)
 - kilometraje (INTEGER - km del vehículo)
 - orden_trabajo (TEXT - qué pidió el cliente)
 - repuestos_utilizados (TEXT - repuestos usados)
@@ -71,8 +71,8 @@ El sistema usa un modelo de **auto único con múltiples servicios**:
 ### Estados de Fichas
 Los estados se determinan automáticamente:
 
-- **"En Proceso"** (amarillo): `fecha_trabajo` es NULL → Trabajo NO completado
-- **"Completado"** (verde): `fecha_trabajo` existe → Trabajo finalizado
+- **"En Proceso"** (amarillo): `fecha_trabajo` es NULL → Vehículo NO entregado
+- **"Completado"** (verde): `fecha_trabajo` existe → Vehículo entregado al cliente
 
 ### Cliente Fiel/VIP
 - Campo: `cliente_fiel` (boolean)

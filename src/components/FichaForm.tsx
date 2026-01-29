@@ -160,8 +160,36 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Función para capitalizar la primera letra de cada línea en campos de texto
+  const capitalizeFirstLetter = (text: string): string => {
+    if (!text) return text;
+
+    // Capitalizar la primera letra de cada línea (por si es multilinea)
+    return text.split('\n').map(line => {
+      if (line.length === 0) return line;
+      return line.charAt(0).toUpperCase() + line.slice(1);
+    }).join('\n');
+  };
+
   const handleInputChange = (field: keyof FichaFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Campos de texto que deben capitalizarse
+    const fieldsToCapitalize: (keyof FichaFormData)[] = [
+      'modelo',
+      'cliente_nombre',
+      'orden_trabajo',
+      'repuestos_utilizados',
+      'trabajo_realizado',
+      'observaciones'
+    ];
+
+    // Capitalizar si es un campo de texto y está en la lista
+    let processedValue = value;
+    if (typeof value === 'string' && fieldsToCapitalize.includes(field)) {
+      processedValue = capitalizeFirstLetter(value);
+    }
+
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
+
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -434,7 +462,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
 
           <Grid item xs={12} sm={6}>
             <DatePicker
-              label="Fecha de Trabajo"
+              label="Fecha de Entrega"
               value={formData.fecha_trabajo ? new Date(formData.fecha_trabajo + 'T00:00:00') : null}
               onChange={(date) => {
                 if (date && !isNaN(date.getTime())) {
@@ -450,7 +478,7 @@ const FichaForm: React.FC<FichaFormProps> = ({ ficha, onSave, onCancel }) => {
               slotProps={{
                 textField: {
                   fullWidth: true,
-                  helperText: 'Opcional'
+                  helperText: 'Opcional - Cuándo se entregó el vehículo'
                 }
               }}
             />

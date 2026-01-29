@@ -362,7 +362,7 @@ const AutoHistoryDialog: React.FC<AutoHistoryProps> = ({
                     {servicio.fecha_trabajo && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" color="primary" gutterBottom>
-                          🏁 Fecha de Finalización:
+                          🏁 Fecha de Entrega:
                         </Typography>
                         <Typography variant="body2" sx={{ ml: 2 }}>
                           {formatDate(servicio.fecha_trabajo)}
